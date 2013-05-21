@@ -89,8 +89,6 @@
                 var length = options.length * t;
                 if (options.parent) {
                     options.y = (-1) * options.parent.length;
-                }
-                else {
                     options.x = 0;
                 }
                 options.parent = branch(canvas, options.parent, options.x, options.y, length, options.angle);
