@@ -24,8 +24,7 @@
 //        cap: "round"
 //    });
 
-    var branch = function(canvas, x, y, length, angle) {
-
+    var branch = function(canvas, parent, x, y, length, angle) {
         var line = canvas.display.line({
             start: {x: x, y: y+length/2},
             end: {x: x, y: y-length/2},
@@ -34,11 +33,12 @@
             stroke: "1px #0aa",
             cap: "round"
         });
-        canvas.addChild(line);
-        return {
-            x: x + (Math.sin(angle * Math.PI/180) * length),
-            y: y - (Math.cos(angle * Math.PI/180) * length)
-        };
+        if(parent) {
+            parent.addChild(line);
+        }else {
+            canvas.addChild(line);
+        }
+        return line;
     };
     var iterate = function(s, options) {
         var i;
@@ -76,7 +76,8 @@
                     'angle': options.angle,
                     'lengthDelta': options.lengthDelta,
                     'angleDelta': options.angleDelta,
-                    'heightMultiplier' : options.heightMultiplier
+                    'heightMultiplier' : options.heightMultiplier,
+                    'parent' : options.parent
                 };
                 i += drawBranches(canvas, s, i+startIndex+1, recursiveOptions) + 1;
             }
@@ -86,10 +87,13 @@
                 console.log('t: ' + t);
                 i += t - 1; // skip the ones we counted
                 var length = options.length * t;
-                var end = branch(canvas, options.x, options.y, length, options.angle);
-//                console.log("x: " + end.x + " y: " + end.y);
-                options.x = end.x;
-                options.y = end.y;
+                if (options.parent) {
+                    options.y = (-1) * options.parent.length;
+                }
+                else {
+                    options.x = 0;
+                }
+                options.parent = branch(canvas, options.parent, options.x, options.y, length, options.angle);
             }
             else if (c == '+') {
                 options.angle += options.angleDelta;
@@ -120,10 +124,12 @@
         'angle' : 0,
         'lengthDelta': 0.99,
         'angleDelta' : 38,
-        'heightMultiplier' : 0.1
+        'heightMultiplier' : 0.1,
+        'parent': null
     };
     drawBranches(canvas, str, 0, drawOptions);
-
+//    var p = branch(canvas, null, canvas.width/2, canvas.height, 30, 10);
+//    var c = branch(canvas, p, 0, -30, 30, 15);
 //        var end = branch(canvas, {
 //            x: 0,
 //            y: canvas.height,
