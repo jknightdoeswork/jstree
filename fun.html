@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="ocanvas-2.4.0.js"></script>
+    <style type="text/css">
+        body {
+            padding: 1em;
+        }
+    </style>
+    <title>Fun</title>
+</head>
+<body>
+<canvas id="canvas" width="800" height="500">
+
+</canvas>
+</body>
+</html>
+<script type="text/javascript">
+    var canvas = oCanvas.create({ canvas: "#canvas", background: "#222" });
+
+//    var lineProto = canvas.display.line({
+//
+//        stroke: "20px #0aa",
+//        cap: "round"
+//    });
+
+    var branch = function(canvas, x, y, length, angle) {
+
+        var line = canvas.display.line({
+            start: {x: x, y: y+length/2},
+            end: {x: x, y: y-length/2},
+            origin: {y:'bottom'},
+            rotation: angle,
+            stroke: "1px #0aa",
+            cap: "round"
+        });
+        canvas.addChild(line);
+        return {
+            x: x + (Math.sin(angle * Math.PI/180) * length),
+            y: y - (Math.cos(angle * Math.PI/180) * length)
+        };
+    };
+    var iterate = function(s, options) {
+        var i;
+        var j;
+        var r0 = options.r0;
+        var r1 = options.r1;
+        var n = options.n;
+        for (j=0; j < n; j++){
+            for (i=0; i < s.length; i++) {
+             var c = s[i];
+                if (c == '1') {
+                    s = s.slice(0, i) + r1 + s.slice(i+1);
+                    i += r1.length-1;
+                }
+                else if (c == '0') {
+                    s = s.slice(0, i) + r0 + s.slice(i+1);
+                    i += r0.length-1;
+                }
+            }
+        }
+        return s;
+    };
+
+    var drawBranches = function(canvas, s, startIndex, options) {
+        var i = 0;
+        while(i+startIndex < s.length && s[i+startIndex] != ']') {
+            var c = s[i+startIndex];
+//            console.log(c);
+            console.log(c);
+            if(c == '['){
+                var recursiveOptions = {
+                    'x': options.x,
+                    'y': options.y,
+                    'length': options.length * options.lengthDelta,
+                    'angle': options.angle,
+                    'lengthDelta': options.lengthDelta,
+                    'angleDelta': options.angleDelta,
+                    'heightMultiplier' : options.heightMultiplier
+                };
+                i += drawBranches(canvas, s, i+startIndex+1, recursiveOptions) + 1;
+            }
+            else if(c == '1') {
+                var t = 0;
+                while(s[t+i+startIndex]=='1') {t++} // count the 1s
+                console.log('t: ' + t);
+                i += t - 1; // skip the ones we counted
+                var length = options.length * t;
+                var end = branch(canvas, options.x, options.y, length, options.angle);
+//                console.log("x: " + end.x + " y: " + end.y);
+                options.x = end.x;
+                options.y = end.y;
+            }
+            else if (c == '+') {
+                options.angle += options.angleDelta;
+            }
+            else if (c == '-') {
+                options.angle -= options.angleDelta;
+            }
+            i++;
+        }
+        return i;
+    };
+
+    var s = "0";
+    var iterateOptions = {
+        r0 : "1[+0][-0]0",
+        r1 : "11",
+        n  : 6
+    };
+
+    var str = iterate(s, iterateOptions);
+    console.log(str.length);
+    console.log(str);
+
+    var drawOptions = {
+        'x': canvas.width/2,
+        'y': canvas.height,
+        'length': 6,
+        'angle' : 0,
+        'lengthDelta': 0.99,
+        'angleDelta' : 38,
+        'heightMultiplier' : 0.1
+    };
+    drawBranches(canvas, str, 0, drawOptions);
+
+//        var end = branch(canvas, {
+//            x: 0,
+//            y: canvas.height,
+//            length: 80,
+//            angle: 15
+//        });
+//        console.log('end: ' + end.x + " " + end.y);
+//        end = branch(canvas, {
+//            x: end.x,
+//            y: end.y,
+//            length: 80,
+//            angle: 20
+//        });
+</script>
