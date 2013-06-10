@@ -60,8 +60,10 @@
 	
 	// Draw a string
     var drawBranches = function(canvas, s, x, y, options) {
-        var i = 0;
-		var stateStack = new Array();
+        var i = 0; // character counter
+        options.depth = 0; // recursive level counter
+		var stateStack = [];
+        var toReturn = {};
         while(i < s.length) {
             var c = s[i];
             if(c == '[') {
@@ -72,7 +74,8 @@
 				'angleDelta': options.angleDelta,
 				'length' : options.length,
 				'lengthDelta': options.lengthDelta,
-				'parent': options.parent
+				'parent': options.parent,
+                'depth': options.depth
 				}
             } else if(c == '1') {
                 var t = 0;
@@ -80,7 +83,7 @@
                 i += t - 1; // skip the ones we counted
                 var length = options.length * t;
 				var _x, _y;
-                if (!options.parent) {
+                if (!options.parent) { // TODO: i hate this..
 					_x = x;
 					_y = y;
                 } else {
@@ -88,6 +91,8 @@
                     _x = 0;
 				}
                 options.parent = branch(canvas, options.parent, _x, _y, length, options.angle);
+                if (!toReturn[options.depth]) toReturn[options.depth] = [];
+                toReturn[options.depth].push(options.parent);
             } else if (c == '+') {
                 options.angle += options.angleDelta;
             } else if (c == '-') {
@@ -97,7 +102,7 @@
 			}
             i++;
         }
-        return i;
+        return toReturn;
     };
 
 	
@@ -110,11 +115,12 @@
     });
 	
 	// Draw Result
-    drawBranches(canvas, s, canvas.width/2, canvas.height, {
+    var branches = drawBranches(canvas, s, canvas.width/2, canvas.height, {
         'length': 6,
         'angle' : 0,
         'lengthDelta': 0.99,
         'angleDelta' : 38,
         'parent': null
     });
+
 </script>
