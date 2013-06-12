@@ -17,8 +17,9 @@
 </html>
 <script type="text/javascript">
     var canvas = oCanvas.create({ canvas: "#canvas", background: "#222" });
-	
-	// Iterate a string
+
+    /***********/
+	/* ITERATE */
     var iterate = function(s, options) {
         var i;
         var j;
@@ -39,8 +40,9 @@
         }
         return s;
     };
-	
-	// Draw a branch
+
+    /***********/
+    /* BRANCH */
     var branch = function(canvas, parent, x, y, length, angle) {
         var line = canvas.display.line({
             start: {x: x, y: y+length/2},
@@ -57,8 +59,9 @@
         }
         return line;
     };
-	
-	// Draw a string
+
+    /***********/
+    /* DRAW BRANCHES */
     var drawBranches = function(canvas, s, x, y, options) {
         var i = 0; // character counter
         options.depth = 0; // recursive level counter
@@ -75,8 +78,8 @@
 				'length' : options.length,
 				'lengthDelta': options.lengthDelta,
 				'parent': options.parent,
-                'depth': options.depth
-				}
+                'depth': options.depth + 1
+				};
             } else if(c == '1') {
                 var t = 0;
                 while(s[t+i]=='1') {t++} // count the 1s
@@ -105,16 +108,32 @@
         return toReturn;
     };
 
-	
-	// BEGIN MAIN
-	// Iterate String
+    var applyWind = function(force, branches) {
+//        for (var depth in branches) {
+        var depth = 3;
+            for (var branchCounter in branches[depth]) {
+                var branch = branches[depth][branchCounter];
+                var wind = force/branch.length;
+                branch.animate({
+                    rotation: branch.rotation + wind
+                }, {
+                    duration: "long",
+                    easing: "ease-in-out-cubic",
+                });
+            }
+//        }
+    };
+
+    /**************/
+	/* BEGIN MAIN */
+    /**************/
     var s = iterate("0", {
         r0 : "1[+0][-0]0",
         r1 : "11",
         n  : 6
     });
-	
-	// Draw Result
+
+
     var branches = drawBranches(canvas, s, canvas.width/2, canvas.height, {
         'length': 6,
         'angle' : 0,
@@ -123,4 +142,11 @@
         'parent': null
     });
 
+    canvas.bind('mouseup', (function() {
+       console.log('applying wind');
+       applyWind(1000, branches);
+    }));
+
+
+    console.log("hello!");
 </script>
