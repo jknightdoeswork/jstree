@@ -8,6 +8,7 @@
         #canvas {
             display: block;
             margin: 0 auto;
+            border: 1px solid #000000;
         }
     </style>
     <title>Fun</title>
@@ -47,13 +48,13 @@
 
     /***********/
     /* BRANCH */
-    var branch = function(canvas, parent, x, y, length, angle) {
+    var branch = function(canvas, parent, x, y, length, angle, strokeWidth) {
         var line = canvas.display.line({
             start: {x: x, y: y+length/2},
             end: {x: x, y: y-length/2},
             origin: {y:'bottom'},
             rotation: angle,
-            stroke: "3px #000000",
+            stroke: strokeWidth+"px #000000",
             cap: "round"
         });
         if(parent) {
@@ -95,6 +96,7 @@
                 var length = options.length * t;
 				var _x, _y;
                 var _angle;
+                var strokeWidth = Math.max(9 - depth, 1);
                 if (!options.parent) { // TODO: i hate this..
 					_x = x;
 					_y = y;
@@ -102,7 +104,7 @@
 					_y = (-1) * options.parent.length;
                     _x = 0;
 				}
-                var b = branch(canvas, options.parent, _x, _y, length, options.angle);
+                var b = branch(canvas, options.parent, _x, _y, length, options.angle, strokeWidth);
                 b.depth = depth;
                 b.angularVelocity = 0;
                 options.angle = 0;
