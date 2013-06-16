@@ -1,10 +1,13 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <script src="ocanvas-2.4.0.js"></script>
+    <!--<script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/ocanvas/2.4.0/ocanvas.min.js"></script>-->
+    <script type="text/javascript" src="ocanvas-2.4.0.js"></script>
+
     <style type="text/css">
-        body {
-            padding: 1em;
+        #canvas {
+            display: block;
+            margin: 0 auto;
         }
     </style>
     <title>Fun</title>
@@ -15,8 +18,9 @@
 </canvas>
 </body>
 </html>
+
 <script type="text/javascript">
-    var canvas = oCanvas.create({ canvas: "#canvas", background: "#222" });
+    var canvas = oCanvas.create({ canvas: "#canvas", background: "#FFFFFF" });
 
     /***********/
 	/* ITERATE */
@@ -49,14 +53,18 @@
             end: {x: x, y: y-length/2},
             origin: {y:'bottom'},
             rotation: angle,
-            stroke: "1px #0aa",
+            stroke: "3px #000000",
             cap: "round"
         });
         if(parent) {
             parent.addChild(line);
+            line.parentRotation = parent.rotation + parent.parentRotation;
         }else {
             canvas.addChild(line);
+            line.parentRotation = 0;
         }
+        line.originalRotation = angle;
+
         return line;
     };
 
@@ -64,9 +72,9 @@
     /* DRAW BRANCHES */
     var drawBranches = function(canvas, s, x, y, options) {
         var i = 0; // character counter
-        options.depth = 0; // recursive level counter
+        var depth = 0; // recursive level counter
 		var stateStack = [];
-        var toReturn = {};
+        var toReturn = [];
         while(i < s.length) {
             var c = s[i];
             if(c == '[') {
@@ -75,17 +83,18 @@
 				options = {
 				'angle': options.angle,
 				'angleDelta': options.angleDelta,
-				'length' : options.length,
-				'lengthDelta': options.lengthDelta,
+				'length' : options.length*options.lengthDelta,
+				'lengthDelta': options.lengthDelta/options.lengthDelta,
 				'parent': options.parent,
-                'depth': options.depth + 1
 				};
+                depth++;
             } else if(c == '1') {
                 var t = 0;
                 while(s[t+i]=='1') {t++} // count the 1s
                 i += t - 1; // skip the ones we counted
                 var length = options.length * t;
 				var _x, _y;
+                var _angle;
                 if (!options.parent) { // TODO: i hate this..
 					_x = x;
 					_y = y;
@@ -93,60 +102,85 @@
 					_y = (-1) * options.parent.length;
                     _x = 0;
 				}
-                options.parent = branch(canvas, options.parent, _x, _y, length, options.angle);
-                if (!toReturn[options.depth]) toReturn[options.depth] = [];
-                toReturn[options.depth].push(options.parent);
+                var b = branch(canvas, options.parent, _x, _y, length, options.angle);
+                b.depth = depth;
+                b.angularVelocity = 0;
+                options.angle = 0;
+                toReturn.push(b);
+                options.parent = b;
             } else if (c == '+') {
                 options.angle += options.angleDelta;
             } else if (c == '-') {
                 options.angle -= options.angleDelta;
             } else if (c == ']') {
 				options = stateStack.pop();
+                depth--;
 			}
             i++;
         }
         return toReturn;
     };
 
-    var applyWind = function(force, branches) {
-//        for (var depth in branches) {
-        var depth = 3;
-            for (var branchCounter in branches[depth]) {
-                var branch = branches[depth][branchCounter];
-                var wind = force/branch.length;
-                branch.animate({
-                    rotation: branch.rotation + wind
-                }, {
-                    duration: "long",
-                    easing: "ease-in-out-cubic",
-                });
-            }
-//        }
-    };
-
     /**************/
 	/* BEGIN MAIN */
     /**************/
     var s = iterate("0", {
-        r0 : "1[+0][-0]0",
-        r1 : "11",
-        n  : 6
+        r0 : "1[+0][-0]",
+        r1 : "1",
+        n  : 9
     });
 
-
     var branches = drawBranches(canvas, s, canvas.width/2, canvas.height, {
-        'length': 6,
+        'length': 150,
         'angle' : 0,
-        'lengthDelta': 0.99,
-        'angleDelta' : 38,
+        'lengthDelta': 0.15,
+        'angleDelta' : 24,
         'parent': null
     });
 
+    var restorativeForce;
+    var restorativeConstant = -0.1;
+    var windForce;
+    var friction = 0.8;
+    var epsilon = 0.0001;
+    var random;
+    var applyWind = false;
+    var generateWind = function() {
+        if (applyWind) {
+        random = Math.floor(Math.random() * 7); // [0, 6]
+            if (random == 6) windForce = 0.01;
+            else {
+                windForce *= friction;
+            }
+        }
+        else windForce = 0;
+    };
+    var stepBranches = function() {
+        branches.forEach(function(branch) {
+            restorativeForce = restorativeConstant * (branch.rotation-branch.originalRotation);
+//            console.log("rotation: " + branch.rotation);
+//            console.log("originalRotation: "+ branch.originalRotation);
+//            console.log("restorativeForce: " +restorativeForce);
+            branch.angularVelocity += restorativeForce;
+            branch.angularVelocity += windForce + branch.depth*windForce;
+            branch.angularVelocity *= friction;
+//            console.log("angularVelocity: " + branch.angularVelocity);
+//            console.log("===================");
+//            if (branch.angularVelocity < epsilon) branch.angularVelocity = 0;
+            branch.rotate(branch.angularVelocity);
+
+        });
+    };
+
+    var step = function() {
+        generateWind();
+        stepBranches(true);
+    };
+
     canvas.bind('mouseup', (function() {
-       console.log('applying wind');
-       applyWind(1000, branches);
+       applyWind = !applyWind;
     }));
 
-
+    canvas.setLoop(step).start();
     console.log("hello!");
 </script>
